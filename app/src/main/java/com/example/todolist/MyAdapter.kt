@@ -1,4 +1,5 @@
 package com.example.todolist
+import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.view.LayoutInflater
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.todolist.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.delay
 
 data class Task(
     var label: String = "",
@@ -131,20 +133,28 @@ class MyAdapter(private val context: Context, private val itemList: MutableList<
     }
 
     private fun deleteItem(position: Int) {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val itemRef = db.collection("users").document(currentUser.uid).collection("tasks").document(itemIds[position])
-            itemRef.delete()
-                .addOnSuccessListener {
-                    itemList.removeAt(position)
-                    itemIds.removeAt(position)
-                    notifyItemRemoved(position)
-                    notifyItemRangeChanged(position, itemList.size)
-                    Toast.makeText(context, "Item deleted", Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(context, "Error deleting item: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+        var alert = AlertDialog.Builder(context)
+        alert.setTitle("Delete Item")
+        alert.setMessage("Are you sure you want to delete this item?")
+        alert.setPositiveButton("Yes") { dialog, which ->
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                db.collection("users").document(currentUser.uid).collection("tasks").document(itemIds[position])
+                    .delete()
+                    .addOnSuccessListener {
+                        itemList.removeAt(position)
+                        itemIds.removeAt(position)
+                        notifyItemRemoved(position)
+                        Toast.makeText(context, "Item deleted", Toast.LENGTH_SHORT).show()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(context, "Error deleting item: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
         }
+        alert.setNegativeButton("No") { dialog, which ->
+            dialog.dismiss()
+        }
+        alert.show()
     }
 }
